@@ -31,7 +31,55 @@ const getUrlString = url => {
   }
 }
 
-const remarkEmbedder = ({cache, transformers, handleError}) => {
+const remarkEmbedder = ({cache, transformers, handleError, isAsync}) => {
+  const asyncHandler = remarkEmbedderAsync({cache, transformers, handleError})
+  const syncHandler = remarkEmbedderSync({cache, transformers, handleError})
+  return tree => {
+    if (isAsync && isAsync()) {
+      return asyncHandler(tree)
+    } else {
+      return syncHandler(tree)
+    }
+  }
+}
+
+const getNodes = tree => {
+  const nodeAndURL = []
+  ;(0, _unistUtilVisit.default)(tree, 'paragraph', paragraphNode => {
+    if (paragraphNode.children.length !== 1) {
+      return
+    }
+
+    const {children} = paragraphNode
+    const node = children[0]
+    const isText = node.type === 'text' // it's a valid link if there's no title, and the value is the same as the URL
+
+    const isValidLink =
+      node.type === 'link' &&
+      node.title === null &&
+      node.children.length === 1 &&
+      node.children[0].value === node.url
+
+    if (!isText && !isValidLink) {
+      return
+    }
+
+    const {url, value = url} = node
+    const urlString = getUrlString(value)
+
+    if (!urlString) {
+      return
+    }
+
+    nodeAndURL.push({
+      parentNode: paragraphNode,
+      url: urlString,
+    })
+  })
+  return nodeAndURL
+}
+
+const remarkEmbedderAsync = ({cache, transformers, handleError}) => {
   // convert the array of transformers to one with both the transformer and the config tuple
   const transformersAndConfig = transformers.map(t =>
     Array.isArray(t)
@@ -44,38 +92,7 @@ const remarkEmbedder = ({cache, transformers, handleError}) => {
         },
   )
   return async tree => {
-    const nodeAndURL = []
-    ;(0, _unistUtilVisit.default)(tree, 'paragraph', paragraphNode => {
-      if (paragraphNode.children.length !== 1) {
-        return
-      }
-
-      const {children} = paragraphNode
-      const node = children[0]
-      const isText = node.type === 'text' // it's a valid link if there's no title, and the value is the same as the URL
-
-      const isValidLink =
-        node.type === 'link' &&
-        node.title === null &&
-        node.children.length === 1 &&
-        node.children[0].value === node.url
-
-      if (!isText && !isValidLink) {
-        return
-      }
-
-      const {url, value = url} = node
-      const urlString = getUrlString(value)
-
-      if (!urlString) {
-        return
-      }
-
-      nodeAndURL.push({
-        parentNode: paragraphNode,
-        url: urlString,
-      })
-    })
+    const nodeAndURL = getNodes(tree)
     const nodesToTransform = []
 
     for (const node of nodeAndURL) {
@@ -168,38 +185,7 @@ const remarkEmbedderSync = ({cache, transformers, handleError}) => {
         },
   )
   return tree => {
-    const nodeAndURL = []
-    ;(0, _unistUtilVisit.default)(tree, 'paragraph', paragraphNode => {
-      if (paragraphNode.children.length !== 1) {
-        return
-      }
-
-      const {children} = paragraphNode
-      const node = children[0]
-      const isText = node.type === 'text' // it's a valid link if there's no title, and the value is the same as the URL
-
-      const isValidLink =
-        node.type === 'link' &&
-        node.title === null &&
-        node.children.length === 1 &&
-        node.children[0].value === node.url
-
-      if (!isText && !isValidLink) {
-        return
-      }
-
-      const {url, value = url} = node
-      const urlString = getUrlString(value)
-
-      if (!urlString) {
-        return
-      }
-
-      nodeAndURL.push({
-        parentNode: paragraphNode,
-        url: urlString,
-      })
-    })
+    const nodeAndURL = getNodes(tree)
     const nodesToTransform = []
 
     for (const node of nodeAndURL) {
@@ -282,5 +268,3 @@ eslint
 */
 
 exports.default = _default
-
-exports.remarkEmbedderSync = remarkEmbedderSync
