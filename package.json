@@ -5,8 +5,7 @@
     "access": "public"
   },
   "description": "Remark plugin to convert URLs to embed code in markdown.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.js",
   "keywords": [
     "remark",
     "remark-plugin"
@@ -58,6 +57,7 @@
   "eslintIgnore": [
     "node_modules",
     "coverage",
-    "dist"
+    "dist",
+    "index.js"
   ]
 }
