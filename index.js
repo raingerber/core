@@ -22,7 +22,8 @@ const htmlToHast = string =>
     .children[0]
 
 const getUrlString = url => {
-  const urlString = url.startsWith('http') ? url : `https://${url}`
+  const urlString = url.startsWith('http') ? url : null
+  // const urlString = url.startsWith('http') ? url : `https://${url}`
 
   try {
     return new URL(urlString).toString()
